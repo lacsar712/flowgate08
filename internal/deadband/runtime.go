@@ -125,5 +125,14 @@ func ExportNodeDump(root, rel string) (string, error) {
 	if filepath.IsAbs(rel) {
 		return "", errors.New("absolute node dump path")
 	}
-	return filepath.Join(root, rel), nil
+	clean := filepath.Clean(rel)
+	full := filepath.Join(root, clean)
+	relOut, err := filepath.Rel(filepath.Clean(root), full)
+	if err != nil {
+		return "", err
+	}
+	if relOut == ".." || strings.HasPrefix(relOut, ".."+string(filepath.Separator)) {
+		return "", errors.New("node dump escapes root")
+	}
+	return full, nil
 }
