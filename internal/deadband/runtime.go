@@ -125,5 +125,13 @@ func ExportNodeDump(root, rel string) (string, error) {
 	if filepath.IsAbs(rel) {
 		return "", errors.New("absolute node dump path")
 	}
-	return filepath.Join(root, rel), nil
+	cleanRoot := filepath.Clean(root)
+	full := filepath.Join(cleanRoot, rel)
+	// Join cleans the result, so an embedded "../" may now point outside root.
+	// Reject anything that no longer resolves under the data root, while still
+	// allowing ordinary relative names (including legitimate "..foo" files).
+	if r, err := filepath.Rel(cleanRoot, full); err != nil || r == ".." || strings.HasPrefix(r, ".."+string(filepath.Separator)) {
+		return "", errors.New("node dump path escapes data root")
+	}
+	return full, nil
 }
